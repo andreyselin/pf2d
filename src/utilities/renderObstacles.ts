@@ -1,29 +1,39 @@
 import {prepareMapToRender, renderMap} from "./misc";
 import {PF2D} from "../index";
-import {Coords} from "../types/coords";
+import {Coords, IterationStep} from "../types/coords";
 
-export function renderObstacles(this: PF2D) {
-  let mapArray: string[][] = prepareMapToRender(this.mapBounds);
+export function renderObstacles(that: PF2D, iterationStep?: IterationStep) {
+  let mapArray: string[][] = prepareMapToRender(that.mapBounds);
 
-  this.obstacles.forEach(({x, y}) => {
-    mapArray[x][y] = '# ';
-  });
-
-  if (this.targetCoords) {
-    mapArray[this.targetCoords.x][this.targetCoords.y] = 'T ';
+  if (iterationStep) {
+    const pathCoords = getPathCoordsList(iterationStep);
+    pathCoords.forEach(({ x, y }) => mapArray[x][y] = 'x ');
   }
 
-  if (Array.isArray(this.lastGeneration)) {
-    const lastGenerationCoords: Coords[] = this.lastGeneration.map(el => el.coords);
-    lastGenerationCoords.forEach(({x, y}) => {
-      mapArray[x][y] = '+ ';
-    });
+  that.obstacles.forEach(({x, y}) => mapArray[x][y] = '# ');
+
+  if (that.targetCoords) {
+    mapArray[that.targetCoords.x][that.targetCoords.y] = 'T ';
   }
 
-  if (this.startCoords) {
-    mapArray[this.startCoords.x][this.startCoords.y] = 'S ';
+  if (Array.isArray(that.lastGeneration)) {
+    const lastGenerationCoords: Coords[] = that.lastGeneration.map(el => el.coords);
+    lastGenerationCoords.forEach(({x, y}) => mapArray[x][y] = '+ ');
   }
 
-  console.log('->', this.lastGeneration?.length);
+  if (that.startCoords) {
+    mapArray[that.startCoords.x][that.startCoords.y] = 'S ';
+  }
+
+  console.log('->', that.lastGeneration?.length);
   renderMap(mapArray);
+}
+
+
+function getPathCoordsList(iterationStep: IterationStep): Coords[] {
+  let coords: Coords[] = [iterationStep.coords];
+  if (iterationStep.parent) {
+    coords = [ ...coords, ...getPathCoordsList(iterationStep.parent) ];
+  }
+  return coords;
 }

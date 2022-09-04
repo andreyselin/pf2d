@@ -3,6 +3,10 @@ export type Coords = {
   y: number;
 }
 
+export interface PrioritizedCoords extends Coords {
+  prior?: boolean;
+}
+
 export type Bounds = {
   w: number;
   h: number;

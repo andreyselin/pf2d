@@ -1,6 +1,14 @@
-import {Bounds, Coords, IterationStep, PathFinderConfig, Polygon, StepIterationResult} from "./types/coords";
+import {
+  Bounds,
+  Coords,
+  IterationStep,
+  PathFinderConfig,
+  Polygon,
+  PrioritizedCoords,
+  StepIterationResult
+} from "./types/coords";
 import {checkIfIsInListOfCoords, isSameCoords} from "./utilities/misc";
-import {renderPath} from "./utilities/renderPath";
+import {renderObstacles} from "./utilities/renderObstacles";
 
 export class PF2D {
 
@@ -30,36 +38,36 @@ export class PF2D {
 
   mapBounds: Bounds;
 
-  getCoordsForNextIteration({ x, y }: Coords): Coords[] {
-    const coords: Coords[] = [];
+  getCoordsForNextIteration({ x, y }: Coords): PrioritizedCoords[] {
+    const coords: PrioritizedCoords[] = [];
     const maxX = this.mapBounds.w - 1;
     const maxY = this.mapBounds.h - 1;
 
     if (x > 0) {
       if (y > 0) {
-        coords.push({ x: x - 1, y: y - 1 })
+        coords.push({ x: x - 1, y: y - 1 });
       }
-      coords.push({ x: x - 1, y })
+      coords.push({ x: x - 1, y, prior: true });
       if (y < maxY - 1) {
-        coords.push({ x: x - 1, y: y + 1 })
+        coords.push({ x: x - 1, y: y + 1 });
       }
     }
 
     if (x < maxX) {
       if (y > 0) {
-        coords.push({ x: x + 1, y: y - 1 })
+        coords.push({ x: x + 1, y: y - 1 });
       }
-      coords.push({ x: x + 1, y })
+      coords.push({ x: x + 1, y, prior: true });
       if (y < maxY - 1) {
-        coords.push({ x: x + 1, y: y + 1 })
+        coords.push({ x: x + 1, y: y + 1 });
       }
     }
 
     if (y > 0) {
-      coords.push({ x, y: y - 1 })
+      coords.push({ x, y: y - 1, prior: true });
     }
     if (y < maxY - 1) {
-      coords.push({ x, y: y + 1 })
+      coords.push({ x, y: y + 1, prior: true });
     }
 
     return coords;
@@ -109,7 +117,7 @@ export class PF2D {
 
   onPathFound(iterationStep: IterationStep) {
     console.log('!!! Found path !!!\n', iterationStep.length);
-    renderPath.bind(this.mapBounds, iterationStep);
+    renderObstacles(this, iterationStep);
   }
 
   maxGenerations = 20;
@@ -174,8 +182,18 @@ export class PF2D {
     const unprocessedCoords = rawCoords
       .filter(rawCoords => !this.isProcessed(rawCoords));
 
+    const sortedUnprocessedCoords = unprocessedCoords.sort((a, b) => {
+      if (a.prior && !b.prior) {
+        return -1;
+      }
+      if (!a.prior && b.prior) {
+        return 1;
+      }
+      return 0;
+    })
+
     // Try to step on coords
-    const succeededCoordsList = unprocessedCoords
+    const succeededCoordsList = sortedUnprocessedCoords
       .filter(targetCoords => this.checkIfCanMakeStep(coords, targetCoords))
 
     // Check if any of new coords reached
