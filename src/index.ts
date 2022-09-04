@@ -1,11 +1,12 @@
-import {Bounds, Coords, IterationStep, Polygon, StepIterationResult} from "./types/coords";
+import {Bounds, Coords, IterationStep, PathFinderConfig, Polygon, StepIterationResult} from "./types/coords";
 import {isSameCoords} from "./utilities/misc";
 
 export class PF2D {
 
-  constructor(mapBounds: Bounds) {
+  constructor({ mapBounds, obstacles }: PathFinderConfig) {
     this.mapBounds = mapBounds;
     this.processed = [];
+    this.obstacles = obstacles;
   }
 
   processed: boolean[][];
@@ -72,9 +73,32 @@ export class PF2D {
     return coords;
   }
 
+  obstacles: Coords[];
+  checkIfHas2dObstacle(coords: Coords): boolean {
+    for (let i = 0; i < this.obstacles.length; i ++) {
+      if (isSameCoords(this.obstacles[i], coords)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Todo:
+  checkIfHasVectorObstacle(): boolean {
+    return false;
+  }
+
   checkIfCanMakeStep(sourceCoords: Coords, targetCoords: Coords): boolean {
     // Try to intersect polygons
-     return true;
+
+    let canMakeStep = true;
+
+    if (this.checkIfHas2dObstacle(targetCoords)) {
+      console.log('obstacle:', targetCoords)
+      canMakeStep = false;
+    }
+
+    return canMakeStep;
   }
 
 
@@ -109,6 +133,7 @@ export class PF2D {
     pathFinder.renderLastGeneration();
 
     if (foundPath) {
+      this.processed.length = 0;
       this.onPathFound(foundPath);
       return;
     }
@@ -147,27 +172,25 @@ export class PF2D {
 
   iterateSingleCell(iterationStep: IterationStep): StepIterationResult {
     const { coords, length } = iterationStep;
+    const newLength = length + 1;
+
     // Get next coords to try to iterate on
     const rawCoords = this.getCoordsForNextIteration(coords);
 
     const unprocessedCoords = rawCoords
       .filter(rawCoords => !this.isProcessed(rawCoords));
 
-    // console.log('unprocessedCoords', unprocessedCoords);
-    const newLength = length + 1;
-
     // Try to step on coords
     const succeededCoordsList = unprocessedCoords
       .filter(targetCoords => this.checkIfCanMakeStep(coords, targetCoords))
 
     // Check if any of new coords reached
+      console.log('Step starts', coords);
     for (let i = 0; i < succeededCoordsList.length; i ++) {
       // Todo: optimizable here
-      if (
-        succeededCoordsList[i].x === this.targetCoords.x
-        &&
-        succeededCoordsList[i].y === this.targetCoords.y
-      ) {
+      console.log('>', i, '/', succeededCoordsList[i]);
+      if (isSameCoords(succeededCoordsList[i], this.targetCoords)) {
+        console.log('Found');
         return {
           foundPath: this.createIterationStep(succeededCoordsList[i], newLength, iterationStep),
           generatedSteps: [],
@@ -208,14 +231,20 @@ export class PF2D {
 
         const isTargetCoords = isSameCoords(this.targetCoords, iterationCoords);
 
+        const isObstacleCoords = this.checkIfHas2dObstacle(iterationCoords);
+
         let toRender = '-';
+
+        if (lastGenerationCount > 0) {
+          toRender = '0'
+        }
 
         if (isTargetCoords) {
           toRender = 't'
         }
 
-        if (lastGenerationCount > 0) {
-          toRender = '0'
+        if (isObstacleCoords) {
+          toRender = '^'
         }
 
         result += toRender;
@@ -226,7 +255,20 @@ export class PF2D {
   }
 }
 
-const pathFinder = new PF2D({ w: 10, h: 10 });
+const pathFinderConfig: PathFinderConfig = {
+  mapBounds: { w: 10, h: 10 },
+  obstacles: [
+    { x: 2, y: 5 },
+    { x: 3, y: 5 },
+    { x: 4, y: 5 },
+    { x: 5, y: 5 },
+    { x: 6, y: 5 },
+    { x: 7, y: 5 },
+    { x: 8, y: 5 },
+  ]
+}
 
-pathFinder.findPath({ x: 5, y: 5 }, { x: 8, y: 8 });
+const pathFinder = new PF2D(pathFinderConfig);
+
+pathFinder.findPath({ x: 4, y: 3 }, { x: 5, y: 6 });
 // pathFinder.debug1();

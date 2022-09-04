@@ -22,3 +22,8 @@ export type StepIterationResult = {
   foundPath?: IterationStep;
   generatedSteps: IterationStep[];
 }
+
+export type PathFinderConfig = {
+  mapBounds: Bounds;
+  obstacles: Coords[]
+}
