@@ -25,5 +25,5 @@ export type StepIterationResult = {
 
 export type PathFinderConfig = {
   mapBounds: Bounds;
-  obstacles: Coords[]
+  obstacles: Coords[];
 }
