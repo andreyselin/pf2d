@@ -14,5 +14,11 @@ export type Polygon = {
 
 export type IterationStep = {
   length: number;
+  parent?: IterationStep; // Undefined for tree top only, which is start position
   coords: Coords;
+}
+
+export type StepIterationResult = {
+  foundPath?: IterationStep;
+  generatedSteps: IterationStep[];
 }
